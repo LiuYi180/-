@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>山丘 ShanQiu | 28天全案</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;500;700;900&display=swap');
+
+        /* --- 0. 基础设定 --- */
+        :root {
+            /* 品牌色 */
+            --sky-top: #6DD5FA;
+            --sky-bot: #FFFFFF;
+            --grass-main: #56ab2f;
+            --grass-light: #a8e063;
+            --accent-orange: #FF6B6B;
+            --text-dark: #1A1A1A;
+            --text-grey: #555555;
+            
+            /* A4 标准尺寸 (72dpi下的像素近似值，用于逻辑布局) */
+            --page-width: 794px;
+            --page-height: 1123px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #222; /* 深色背景衬托纸张 */
+            font-family: 'Noto Sans SC', sans-serif;
+            color: var(--text-dark);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* 禁止body滚动，由内部容器接管 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- 1. 缩放容器 (实现手机端等比缩放的核心) --- */
+        #scaler {
+            transform-origin: center center;
+            /* 宽高将由JS动态设置以匹配窗口 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- 2. 翻页视窗 --- */
+        #book-viewport {
+            width: var(--page-width);
+            height: var(--page-height);
+            overflow-x: scroll;
+            overflow-y: hidden;
+            display: flex;
+            scroll-snap-type: x mandatory; /* 强制分页吸附 */
+            scroll-behavior: smooth;
+            background: #fff;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            /* 隐藏滚动条 */
+            -ms-overflow-style: none;  
+            scrollbar-width: none; 
+        }
+        #book-viewport::-webkit-scrollbar { display: none; }
+
+        /* --- 3. A4 页面样式 --- */
+        .page {
+            flex: 0 0 var(--page-width);
+            width: var(--page-width);
+            height: var(--page-height);
+            background: #fff;
+            position: relative;
+            scroll-snap-align: center; /* 关键：翻页对齐 */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-right: 1px solid #eee;
+        }
+
+        /* --- 4. 装饰元素 (蓝天白云 & 青草山丘) --- */
+        .header-sky {
+            height: 120px;
+            background: linear-gradient(to bottom, var(--sky-top), var(--sky-bot));
+            position: relative;
+            overflow: hidden;
+            border-bottom: 4px solid #000;
+        }
+        
+        /* 像素云朵 */
+        .cloud {
+            position: absolute;
+            width: 100px; height: 30px;
+            background: #fff;
+            top: 40px; left: -120px;
+            animation: cloudMove 15s linear infinite;
+        }
+        .cloud::before, .cloud::after {
+            content: ''; position: absolute; background: #fff;
+        }
+        .cloud::before { width: 40px; height: 40px; top: -20px; left: 15px; border-radius: 50%; }
+        .cloud::after { width: 50px; height: 50px; top: -30px; left: 40px; border-radius: 50%; }
+        
+        .c2 { top: 20px; animation-duration: 20s; animation-delay: 2s; transform: scale(0.6); opacity: 0.8; }
+        .c3 { top: 60px; animation-duration: 12s; animation-delay: 5s; transform: scale(0.8); }
+
+        @keyframes cloudMove {
+            0% { left: -150px; }
+            100% { left: 100%; }
+        }
+
+        .footer-hill {
+            margin-top: auto;
+            height: 140px;
+            position: relative;
+            background: #fff;
+            border-top: 4px solid #000;
+        }
+        /* 几何山丘 SVG */
+        .hill-svg {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+        }
+        .hill-back { fill: var(--grass-main); transform: scale(1.1, 1); opacity: 0.8; }
+        .hill-front { fill: var(--grass-light); }
+
+        /* --- 5. 内容排版 --- */
+        .content {
+            padding: 40px 50px;
+            flex: 1;
+        }
+
+        /* 标题系统 */
+        h1 { font-size: 36px; font-weight: 900; margin-bottom: 10px; line-height: 1.2; letter-spacing: -1px; }
+        h2 { 
+            font-size: 24px; font-weight: 700; color: #000;
+            margin-top: 40px; margin-bottom: 20px; 
+            border-left: 10px solid var(--accent-orange); 
+            padding-left: 15px; 
+            display: flex; align-items: center;
+        }
+        h3 { font-size: 18px; font-weight: 700; color: var(--grass-main); margin-top: 25px; margin-bottom: 10px; }
+        
+        p { font-size: 16px; line-height: 1.8; color: var(--text-grey); margin-bottom: 15px; text-align: justify; }
+
+        /* 强调框 */
+        .box {
+            border: 3px solid #000;
+            padding: 20px;
+            margin: 20px 0;
+            background: #F9F9F9;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.1); /* 硬阴影 */
+        }
+        .box-title { font-weight: 900; font-size: 14px; background: #000; color: #fff; display: inline-block; padding: 4px 10px; margin-bottom: 10px; }
+
+        /* 列表 */
+        ul.styled-list { list-style: none; }
+        ul.styled-list li {
+            margin-bottom: 10px; padding-left: 20px; position: relative; font-size: 16px; color: var(--text-grey);
+        }
+        ul.styled-list li::before {
+            content: '>'; position: absolute; left: 0; color: var(--accent-orange); font-weight: 900;
+        }
+
+        /* 表格/网格 (用于28天排班) */
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .schedule-table th {
+            background: var(--grass-light);
+            border: 1px solid #000;
+            padding: 10px;
+            text-align: left;
+            font-weight: 900;
+        }
+        .schedule-table td {
+            border: 1px solid #000;
+            padding: 8px 10px;
+            vertical-align: top;
+        }
+        .date-col { font-weight: 700; color: var(--grass-main); width: 60px; }
+
+        /* 封面特有 */
+        .cover-wrapper {
+            display: flex; flex-direction: column; justify-content: center; height: 100%; text-align: center;
+        }
+        .stamp {
+            border: 4px solid var(--accent-orange);
+            color: var(--accent-orange);
+            font-size: 24px; font-weight: 900;
+            padding: 10px 30px;
+            display: inline-block;
+            transform: rotate(-5deg);
+            margin: 40px auto;
+        }
+
+        /* 页码 */
+        .page-num {
+            position: absolute; bottom: 15px; right: 20px;
+            font-size: 18px; font-weight: 900; color: #fff; z-index: 10;
+        }
+
+        /* 导航按钮 */
+        .nav-btn {
+            position: fixed; top: 50%; transform: translateY(-50%);
+            width: 60px; height: 60px; background: #fff;
+            border: 3px solid #000; border-radius: 0; /* 直角 */
+            cursor: pointer; z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: 900; font-size: 24px;
+            box-shadow: 5px 5px 0 #000;
+            transition: transform 0.1s;
+        }
+        .nav-btn:active { transform: translateY(-50%) translate(2px, 2px); box-shadow: 3px 3px 0 #000; }
+        .prev { left: 20px; }
+        .next { right: 20px; }
+
+        @media (max-width: 800px) {
+            .nav-btn { display: none; } /* 手机端隐藏按钮，使用滑动 */
+        }
+
+        /* 打印设置 */
+        @media print {
+            body { background: none; height: auto; display: block; overflow: visible; }
+            #scaler { transform: none !important; width: auto; height: auto; display: block; }
+            #book-viewport { 
+                width: 100%; height: auto; overflow: visible; display: block; 
+                box-shadow: none; 
+            }
+            .page { 
+                width: 210mm; height: 297mm; /* 强制A4 */
+                margin: 0; page-break-after: always; border: none; 
+            }
+            .nav-btn { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 导航按钮 -->
+    <div class="nav-btn prev" onclick="scrollBook(-1)">&lt;</div>
+    <div class="nav-btn next" onclick="scrollBook(1)">&gt;</div>
+
+    <div id="scaler">
+        <div id="book-viewport">
+
+            <!-- PAGE 1: 封面 -->
+            <div class="page">
+                <div class="header-sky">
+                    <div class="cloud"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+                </div>
+                <div class="content">
+                    <div class="cover-wrapper">
+                        <div style="font-size: 24px; letter-spacing: 10px; margin-bottom: 20px; color: #999;">SHANQIU</div>
+                        <h1 style="font-size: 80px; margin-bottom: 10px;">山丘</h1>
+                        <p style="font-size: 24px; color: var(--text-dark);">校园经济平台 · 全渠道品牌与内容系统</p>
+                        
+                        <div style="width: 100px; height: 8px; background: #000; margin: 40px auto;"></div>
+                        
+                        <div class="stamp">28天执行策划案<br><span style="font-size:16px">最终交付版</span></div>
+
+                        <div style="margin-top: 100px; text-align: left; border-left: 6px solid #000; padding-left: 30px;">
+                            <p style="margin: 5px 0; color: #000;"><strong>交付对象:</strong> 杭州星微品牌策划有限公司</p>
+                            <p style="margin: 5px 0; color: #000;"><strong>项目属性:</strong> 山丘 IP 策划</p>
+                            <p style="margin: 5px 0; color: #000;"><strong>日期:</strong> 2026</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-hill">
+                    <svg class="hill-svg hill-back" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,100 L0,40 L30,20 L60,50 L100,10 Z" /></svg>
+                    <svg class="hill-svg hill-front" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,100 L0,60 L40,30 L70,50 L100,20 L100,100 Z" /></svg>
+                </div>
+                <div class="page-num">01</div>
+            </div>
+
+            <!-- PAGE 2: 目标与定位 -->
+            <div class="page">
+                <div class="header-sky"><div class="cloud"></div></div>
+                <div class="content">
+                    <h2>一、项目目标</h2>
+                    <div class="box">
+                        <div class="box-title">增长闭环</div>
+                        <p style="margin:0; font-weight:bold; font-size:18px;">看到 — 理解 — 进入 — 留下</p>
+                    </div>
+                    <p>在不制造运营感、不强推转化的前提下，通过一套长期可复用的品牌与内容系统，持续吸引合适的大学生进入山丘，以规模增长支撑平台持续盈利。</p>
+
+                    <h2>二、品牌定位</h2>
+                    <h3>品牌一句话定位</h3>
+                    <p>山丘，是一个扎根杭州小和山大学城、已实现稳定盈利的<strong>青年实践共同体</strong>，向大学生开放真实参与、真实分工、真实收益的长期平台。</p>
+
+                    <h3>品牌本质</h3>
+                    <ul class="styled-list">
+                        <li>不是社团、课程或创业孵化项目。</li>
+                        <li>而是一个<strong>已经稳定运转的校园经济系统</strong>。</li>
+                        <li>个体可以以参与者身份进入，在真实分工与真实交易中获得能力成长与实际回报。</li>
+                    </ul>
+                </div>
+                <div class="footer-hill">
+                    <svg class="hill-svg hill-front" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,100 L0,50 Q25,20 50,50 T100,40 L100,100 Z" /></svg>
+                </div>
+                <div class="page-num">02</div>
+            </div>
+
+            <!-- PAGE 3: 调性与视觉 -->
+            <div class="page">
+                <div class="header-sky"><div class="cloud c2"></div></div>
+                <div class="content">
+                    <h2>三、品牌调性</h2>
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                        <span style="background: #000; color: #fff; padding: 5px 15px; font-weight: bold;">克制</span>
+                        <span style="background: #000; color: #fff; padding: 5px 15px; font-weight: bold;">松弛</span>
+                        <span style="background: #000; color: #fff; padding: 5px 15px; font-weight: bold;">稳定</span>
+                        <span style="background: #000; color: #fff; padding: 5px 15px; font-weight: bold;">真实</span>
+                    </div>
+
+                    <h3>表达原则</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div style="background: #eee; padding: 15px;">
+                            <p style="margin:0; font-weight:bold;">⛔️ AVOID</p>
+                            <p style="font-size:14px; margin:5px 0;">不喊口号，不制造焦虑<br>不包装成功，不夸大结果</p>
+                        </div>
+                        <div style="background: #e8f5e9; padding: 15px;">
+                            <p style="margin:0; font-weight:bold; color:var(--grass-main);">✅ KEEP</p>
+                            <p style="font-size:14px; margin:5px 0;">公开规则、流程与成本<br>强调持续运转</p>
+                        </div>
+                    </div>
+
+                    <h2>四、视觉方向</h2>
+                    <p><strong>目标：</strong>建立“真实存在、可以长期停留、值得信任”的整体感受。</p>
+                    <div class="box" style="border-color: var(--grass-light); background: #fff;">
+                        <ul class="styled-list">
+                            <li>自然、低饱和色系</li>
+                            <li>大留白、慢节奏</li>
+                            <li>真实场景优先于图形装饰</li>
+                            <li>人与空间并重，不做人设化表达</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer-hill">
+                    <svg class="hill-svg hill-front" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,100 L0,70 L30,40 L60,60 L100,30 L100,100 Z" /></svg>
+                </div>
+                <div class="page-num">03</div>
+            </div>
+
+            <!-- PAGE 4: LOGO & 内容 -->
+            <div class="page">
+                <div class="header-sky"><div class="cloud"></div></div>
+                <div class="content">
+                    <h2>五、Logo 设计方向</h2>
+                    <div style="background: #fff3cd; padding: 15px; border: 2px solid #ffecb3; margin-bottom: 20px;">
+                        <p style="margin:0;"><strong>设计关键词：</strong>柔和山丘轮廓、缓坡、层叠曲线、稳定结构、轻微光点意象。</p>
+                        <p style="margin:10px 0 0; font-size:14px; color:#888;">❌ 避免：锋利线条、科技感、常见创业符号</p>
+                    </div>
+
+                    <h2>六、内容系统</h2>
+                    <h3>核心问题</h3>
+                    <p style="font-size: 20px; font-weight: 900; color: #000;">"如果加入山丘，会真实经历什么？"</p>
+
+                    <h3>长期内容母题</h3>
+                    <div class="box" style="margin-top: 10px;">
+                        <ul class="styled-list">
+                            <li><strong>平台如何真实运转</strong>（分工、决策、交易、执行）</li>
+                            <li><strong>普通人如何进入系统</strong>（新人路径、任务阶梯、成长过程）</li>
+                            <li><strong>规则与门槛</strong>（集中呈现一次，用于筛选）</li>
+                        </ul>
+                    </div>
+
+                    <h2>七、渠道协同</h2>
+                    <p><strong>抖音：</strong>被看见与代入（场景化短视频）<br>
+                    <strong>公众号：</strong>被理解与被信任（结构化说明）<br>
+                    <strong>私域/表单：</strong>唯一进入入口（标准化流程）<br>
+                    <strong>线下空间：</strong>最终验证场域（决定留存）</p>
+                </div>
+                <div class="footer-hill">
+                    <svg class="hill-svg hill-front" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,100 Q40,60 100,80 L100,100 Z" /></svg>
+                </div>
+                <div class="page-num">04</div>
+            </div>
+
+            <!-- PAGE 5: 28天排班表 (上半部分) -->
+            <div class="page">
+                <div class="header-sky"><div class="cloud"></div></div>
+                <div class="content">
+                    <h2>八、28 天内容排班表 (1/2)</h2>
+                    
+                    <h3 style="background:var(--grass-light); color:#fff; padding:5px 10px; display:inline-block; margin-top:0;">第一周｜认知建立：这是一个真实运转的系统</h3>
+                    <table class="schedule-table">
+                        <tr><td class="date-col">02/01</td><td>山丘在做什么</td></tr>
+                        <tr><td class="date-col">02/02</td><td>盈利从哪里来（讲逻辑，不讲数字）</td></tr>
+                        <tr><td class="date-col">02/03</td><td>团队如何分工</td></tr>
+                        <tr><td class="date-col">02/04</td><td>真实的工作强度</td></tr>
+                        <tr><td class="date-col">02/05</td><td>决策是如何发生的</td></tr>
+                        <tr><td class="date-col">02/06</td><td>当前真实存在的问题</td></tr>
+                        <tr><td class="date-col">02/07</td><td>阶段性记录：系统仍在运转</td></tr>
+                    </table>
+
+                    <h3 style="background:var(--sky-top); color:#fff; padding:5px 10px; display:inline-block; margin-top:30px;">第二周｜路径展示：普通人如何进入</h3>
+                    <table class="schedule-table">
+                        <tr><td class="date-col">02/08</td><td>第一次走进山丘的真实感受</td></tr>
+                        <tr><td class="date-col">02/09</td><td>新人第一周在做什么</td></tr>
+                        <tr><td class="date-col">02/10</td><td>谁会留下</td></tr>
+                        <tr><td class="date-col">02/11</td><td>为什么有人会离开</td></tr>
+                        <tr><td class="date-col">02/12</td><td>在这里学到的是什么</td></tr>
+                        <tr><td class="date-col">02/13</td><td>收益的真实预期</td></tr>
+                        <tr><td class="date-col">02/14</td><td>这不是理想主义项目</td></tr>
+                    </table>
+                </div>
+                <div class="footer-hill">
+                    <svg class="hill-svg hill-front" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,100 L50,60 L100,80 L100,100 Z" /></svg>
+                </div>
+                <div class="page-num">05</div>
+            </div>
+
+            <!-- PAGE 6: 28天排班表 (下半部分) -->
+            <div class="page">
+                <div class="header-sky"><div class="cloud"></div></div>
+                <div class="content">
+                    <h2>八、28 天内容排班表 (2/2)</h2>
+
+                    <h3 style="background:var(--accent-orange); color:#fff; padding:5px 10px; display:inline-block; margin-top:0;">第三周｜现实呈现：变化与选择</h3>
+                    <table class="schedule-table">
+                        <tr><td class="date-col">02/15</td><td>人的变化如何发生</td></tr>
+                        <tr><td class="date-col">02/16</td><td>压力从哪里来</td></tr>
+                        <tr><td class="date-col">02/17</td><td>春节特别版：过年，但现实仍在继续</td></tr>
+                        <tr><td class="date-col">02/18</td><td>节后回到现实</td></tr>
+                        <tr><td class="date-col">02/19</td><td>自由的真实代价</td></tr>
+                        <tr><td class="date-col">02/20</td><td>为什么有人选择留下</td></tr>
+                        <tr><td class="date-col">02/21</td><td>普通一周的真实状态</td></tr>
+                    </table>
+
+                    <h3 style="background:#000; color:#fff; padding:5px 10px; display:inline-block; margin-top:30px;">第四周｜规则、流程与长期存在</h3>
+                    <table class="schedule-table">
+                        <tr><td class="date-col">02/22</td><td>什么样的人适合山丘</td></tr>
+                        <tr><td class="date-col">02/23</td><td>什么样的人不适合（唯一一次集中呈现）</td></tr>
+                        <tr><td class="date-col">02/24</td><td>加入山丘的真实流程</td></tr>
+                        <tr><td class="date-col">02/25</td><td>我们真正看重什么</td></tr>
+                        <tr><td class="date-col">02/26</td><td>试用与筛选机制</td></tr>
+                        <tr><td class="date-col">02/27</td><td>一个普通日常，但系统仍在运转</td></tr>
+                        <tr><td class="date-col">02/28</td><td>开学了，每个人都会有新的开始</td></tr>
+                    </table>
+                </div>
+                <div class="footer-hill">
+                    <svg class="hill-svg hill-front" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,100 L0,70 L100,30 L100,100 Z" /></svg>
+                </div>
+                <div class="page-num">06</div>
+            </div>
+
+            <!-- PAGE 7: 转化与边界 -->
+            <div class="page">
+                <div class="header-sky"><div class="cloud"></div></div>
+                <div class="content">
+                    <h2>九、转化机制</h2>
+                    <ul class="styled-list">
+                        <li><strong>全渠道统一加入入口</strong></li>
+                        <li><strong>内容不直接拉人</strong>，只提供清晰路径</li>
+                        <li>通过规则与试用机制完成筛选</li>
+                        <li>线下参与决定最终留存</li>
+                    </ul>
+
+                    <h2>十、执行边界</h2>
+                    <div style="display: flex; gap: 20px;">
+                        <div style="flex:1; border: 2px solid var(--grass-main); padding: 15px;">
+                            <h3 style="margin-top:0;">IN (包含)</h3>
+                            <ul class="styled-list" style="font-size: 14px;">
+                                <li>品牌定位与调性</li>
+                                <li>视觉方向与 Logo 策略</li>
+                                <li>全渠道内容系统</li>
+                                <li>28 天游标排班与主题</li>
+                            </ul>
+                        </div>
+                        <div style="flex:1; border: 2px solid #ccc; padding: 15px; color: #999;">
+                            <h3 style="margin-top:0; color: #999;">OUT (不含)</h3>
+                            <ul class="styled-list" style="font-size: 14px;">
+                                <li style="color:#999">日常拍摄与剪辑执行</li>
+                                <li style="color:#999">账号长期运营</li>
+                                <li style="color:#999">私域具体管理细节</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 50px; text-align: center; border-top: 4px solid #000; padding-top: 30px;">
+                        <h1 style="font-size: 24px;">结语</h1>
+                        <p style="font-size: 18px;">山丘不是阶段性项目，而是一个持续存在的校园经济系统。</p>
+                        <p style="font-size: 18px; color: var(--text-dark); font-weight: bold;">内容与品牌的作用，只是让它被看见、被理解，并被理性选择进入。</p>
+                    </div>
+                </div>
+                <div class="footer-hill">
+                    <svg class="hill-svg hill-front" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,100 L0,50 L50,80 L100,40 L100,100 Z" /></svg>
+                </div>
+                <div class="page-num">07</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- 核心逻辑：等比缩放 ---
+        function scaleLayout() {
+            const scaler = document.getElementById('scaler');
+            const pageWidth = 794;  // A4 逻辑宽度
+            const pageHeight = 1123; // A4 逻辑高度
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+
+            // 计算缩放比例：取宽或高的最小适配比，并留一点边距(0.95)
+            const scaleX = windowWidth / pageWidth;
+            const scaleY = windowHeight / pageHeight;
+            const scale = Math.min(scaleX, scaleY) * 0.95;
+
+            // 应用缩放
+            scaler.style.transform = `scale(${scale})`;
+            
+            // 修正容器宽高，使其占据实际空间
+            scaler.style.width = `${pageWidth}px`;
+            scaler.style.height = `${pageHeight}px`;
+        }
+
+        // 初始化及窗口改变时触发
+        window.addEventListener('load', scaleLayout);
+        window.addEventListener('resize', scaleLayout);
+
+        // --- 翻页逻辑 ---
+        const viewport = document.getElementById('book-viewport');
+        const pageWidth = 794;
+
+        function scrollBook(direction) {
+            viewport.scrollBy({
+                left: direction * pageWidth,
+                behavior: 'smooth'
+            });
+        }
+    </script>
+</body>
+</html>
